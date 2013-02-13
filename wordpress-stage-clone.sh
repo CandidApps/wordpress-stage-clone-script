@@ -30,7 +30,7 @@ fi
 
 # rsync remote files to our local dir 
 echo "* Syncing filesystem to ${STAGING_ADDR}/"
-/usr/bin/rsync -e ssh -avz --stats --progress ${PRODUCTION_SERVER}:${PRODUCTION_DIR} ${STAGING_ADDR}/
+/usr/bin/rsync -e ssh --delete -avz --stats --progress ${PRODUCTION_SERVER}:${PRODUCTION_DIR} ${STAGING_ADDR}/
 
 # parse wp-config to the the constants needed 
 echo "* Fetching data from ${STAGING_ADDR}/wp-config.php"
