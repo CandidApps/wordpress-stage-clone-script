@@ -3,6 +3,12 @@
 # wordpress-stage-clone-script v1 by Christian Bolstad - christian@hippies.se  
 # Creates a local clone of a remote wordpress installation, with search & replace of hostnames in the database
 
+# TODO: 
+#   * check if wp-config.php was parsed correctly (duplicate commented setup lines etc, DOMAIN_CURRENT site exists etc) 
+#   * check if it's possible to connect to the remote server
+#   * verify that rsync is installed on the remote server
+#   * verify that the local database exist and is connectable
+#   * verify that the remote database exist and is connectable
 						
 if [$1 == ''] ; then				 
    echo "Error: no config file passed as parameter, syntax: $0 myhostname.stageconf "
@@ -21,9 +27,11 @@ if [ ! -d ${STAGING_ADDR} ] ; then
   exit 0
 fi
 
+# rsync remote files to our local dir 
 echo "* Syncing filesystem to ${STAGING_ADDR}/"
 /usr/bin/rsync -e ssh -avz --stats --progress ${PRODUCTION_SERVER}:${PRODUCTION_DIR} ${STAGING_ADDR}/
 
+# parse wp-config to the the constants needed 
 echo "* Fetching data from ${STAGING_ADDR}/wp-config.php"
 WPCONFIG="${STAGING_ADDR}/wp-config.php" 
 DATABASE_NAME=`cat ${WPCONFIG} | grep DB_NAME | cut -d \' -f 4`
@@ -45,17 +53,20 @@ echo ' \t ' stage hostname: ${STAGING_ADDR}
 
 echo "* Updating ${WPCONFIG} with new hostname"
 
+# replace the hostname in the our local wp-config.php
 sed -i  -e s/${PRODUCTION_ADDR}/${STAGING_ADDR}/g ${WPCONFIG}
                 
 echo "! Will now sleep in 5 sec before starting migrating"
 
 sleep 5
 
+# do a dump from the remote database 
 echo "* Dumping remote database"
 ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --single-transaction ${DATABASE_NAME} " > dump.sql
 
 echo "* Migrating database"
 
+# update the database tables in the local database
 # mysql store procedure by Niklas Lönn http://blog.wp.weightpoint.se/2012/01/04/synchronizing-wordpress-multisite-database-from-production-to-staging-enviorment/ 
 
 mysql  --user=${STAGING_DB_USER} --password=${STAGING_DB_PWD} ${DATABASE_NAME} << EOF
@@ -109,4 +120,7 @@ update ${TBL_PREFIX}site set domain = '${STAGING_ADDR}' where domain = '${PRODUC
 
 EOF
 
+# remove temporary file 
+rm dump.sql
 
+echo "* Yay! All done."
