@@ -5,6 +5,7 @@
 
 # TODO: 
 #   * check if wp-config.php was parsed correctly (duplicate commented setup lines etc, DOMAIN_CURRENT site exists etc) 
+#   * modify the stored procedure to skip wpmu-tables if they dont exist
 #   * check if it's possible to connect to the remote server
 #   * verify that rsync is installed on the remote server
 #   * verify that the local database exist and is connectable
@@ -63,6 +64,9 @@ sleep 5
 # do a dump from the remote database 
 echo "* Dumping remote database"
 ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --single-transaction ${DATABASE_NAME} " > dump.sql
+
+# setting up local copy of database
+mysql -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} ${DATABASE_NAME} < dump.sql
 
 echo "* Migrating database"
 
