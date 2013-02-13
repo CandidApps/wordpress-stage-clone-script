@@ -56,6 +56,8 @@ ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --
 
 echo "* Migrating database"
 
+# mysql store procedure by Niklas Lönn http://blog.wp.weightpoint.se/2012/01/04/synchronizing-wordpress-multisite-database-from-production-to-staging-enviorment/ 
+
 mysql  --user=${STAGING_DB_USER} --password=${STAGING_DB_PWD} ${DATABASE_NAME} << EOF
 delimiter //
 DROP PROCEDURE IF EXISTS update_wp_procedure;
