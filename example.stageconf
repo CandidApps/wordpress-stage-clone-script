@@ -1,0 +1,5 @@
+STAGING_ADDR="riksdagen.stage.hippies.se"
+PRODUCTION_SERVER="www@riksdagen.se"
+PRODUCTION_DIR="riksdagen.se/"
+
+
