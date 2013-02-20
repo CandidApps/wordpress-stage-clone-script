@@ -30,7 +30,37 @@ fi
 
 # rsync remote files to our local dir 
 echo "* Syncing filesystem to ${STAGING_ADDR}/"
+
+if [ ! ${TARGET_DB_NAME} ] ; then
+    echo "No target database set - using the same as in wp-config.php"
+else
+    echo "Setting local databse to ${TARGET_DB_NAME} "    
+fi
+
+echo "* Syncing filesystem to ${STAGING_ADDR}/"
+
+if [ ! ${TARGET_DB_USER} ] ; then
+    echo "No target database username set - using the same as in wp-config.php"
+else
+    echo "Setting local database user to ${TARGET_DB_USER} "    
+fi
+
+if [ ! ${TARGET_DB_PASSWORD} ] ; then
+    echo "No target database password set - using the same as in wp-config.php"
+else
+    echo "Setting local database password to ${TARGET_DB_PASSWORD} "    
+fi
+
+
+
+if [ ${EXTRASQL} ] ; then
+    echo "Extra mysql statements to execute: ${EXTRASQL}"
+fi
+
+#exit 0
+
 /usr/bin/rsync -e ssh --delete -avz --stats --progress ${PRODUCTION_SERVER}:${PRODUCTION_DIR} ${STAGING_ADDR}/
+
 
 # parse wp-config to the the constants needed 
 echo "* Fetching data from ${STAGING_ADDR}/wp-config.php"
@@ -40,6 +70,9 @@ STAGING_DB_USER=`cat $WPCONFIG | grep DB_USER | cut -d \' -f 4`
 STAGING_DB_PWD=`cat $WPCONFIG | grep DB_PASSWORD | cut -d \' -f 4`
 TBL_PREFIX=`cat $WPCONFIG | grep table_prefix | cut -d \' -f 2`
 PRODUCTION_ADDR=`cat $WPCONFIG | grep DOMAIN_CURRENT_SITE | cut -d \' -f 4`
+
+
+
 
 echo "* Got this data - make sure it's correct:"
 echo Database 
@@ -51,22 +84,46 @@ echo Siteinfo
 echo ' \t ' production hostname: ${PRODUCTION_ADDR}
 echo ' \t ' stage hostname: ${STAGING_ADDR}
 
-
 echo "* Updating ${WPCONFIG} with new hostname"
 
 # replace the hostname in the our local wp-config.php
 sed -i  -e s/${PRODUCTION_ADDR}/${STAGING_ADDR}/g ${WPCONFIG}
-                
+
+
 echo "! Will now sleep in 5 sec before starting migrating"
 
-sleep 5
+#sleep 5
 
 # do a dump from the remote database 
 echo "* Dumping remote database"
-ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --single-transaction ${DATABASE_NAME} " > dump.sql
+#ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --single-transaction ${DATABASE_NAME} " > dump.sql
 
 # setting up local copy of database
 mysql -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} ${DATABASE_NAME} < dump.sql
+
+# for exact match - use single quotes for the parameters
+
+if [ ${TARGET_DB_NAME} ] ; then
+    sed -i  -e s/\'${DATABASE_NAME}\'/\'${TARGET_DB_NAME}\'/ ${WPCONFIG}
+    DATABASE_NAME=${TARGET_DB_NAME}
+    echo "DATABASE_NAME is now ${DATABASE_NAME}"
+fi
+
+if [ ${TARGET_DB_USER} ] ; then
+    sed -i  -e s/\'${STAGING_DB_USER}\'/\'${TARGET_DB_USER}\'/ ${WPCONFIG}
+    STAGING_DB_USER=${TARGET_DB_USER}
+    echo "STAGING_DB_USER is now ${STAGING_DB_USER}"
+
+fi
+                    
+if [ ${TARGET_DB_PASSWORD} ] ; then
+    sed -i  -e s/\'${STAGING_DB_PWD}\'/\'${TARGET_DB_PASSWORD}\'/ ${WPCONFIG}    
+    STAGING_DB_PWD=${TARGET_DB_PASSWORD}
+    echo "STAGING_DB_PWD is now ${STAGING_DB_PWD}"
+
+fi
+
+
 
 echo "* Migrating database"
 
@@ -124,7 +181,25 @@ update ${TBL_PREFIX}site set domain = '${STAGING_ADDR}' where domain = '${PRODUC
 
 EOF
 
+
+if [ ${EXTRASQL} ] ; then
+    echo "Extra mysql statements to execute: ${EXTRASQL}"
+mysql  --user=${STAGING_DB_USER} --password=${STAGING_DB_PWD} ${DATABASE_NAME} << EOF
+
+
+${EXTRASQL}
+
+EOF
+
+fi
+
+
+
 # remove temporary file 
-rm dump.sql
+#rm dump.sql
 
 echo "* Yay! All done."
+
+
+# + sed -i -e s/gf-prod-20130107/gf-dev/g gemensamframtid.dev.hippies.se/wp-config.php
+
