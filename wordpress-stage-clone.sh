@@ -92,7 +92,7 @@ sed -i  -e s/${PRODUCTION_ADDR}/${STAGING_ADDR}/g ${WPCONFIG}
 
 echo "! Will now sleep in 5 sec before starting migrating"
 
-#sleep 5
+sleep 5
 
 # do a dump from the remote database 
 echo "* Dumping remote database"
@@ -196,7 +196,7 @@ fi
 
 
 # remove temporary file 
-#rm dump.sql
+rm dump.sql
 
 echo "* Yay! All done."
 
