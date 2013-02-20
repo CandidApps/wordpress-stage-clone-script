@@ -96,7 +96,7 @@ sleep 5
 
 # do a dump from the remote database 
 echo "* Dumping remote database"
-#ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --single-transaction ${DATABASE_NAME} " > dump.sql
+ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --single-transaction ${DATABASE_NAME} " > dump.sql
 
 # setting up local copy of database
 mysql -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} ${DATABASE_NAME} < dump.sql
