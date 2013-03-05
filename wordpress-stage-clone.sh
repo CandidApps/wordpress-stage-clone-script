@@ -86,6 +86,7 @@ echo ' \t ' stage hostname: ${STAGING_ADDR}
 
 echo "* Updating ${WPCONFIG} with new hostname"
 
+
 # replace the hostname in the our local wp-config.php
 sed -i  -e s/${PRODUCTION_ADDR}/${STAGING_ADDR}/g ${WPCONFIG}
 
@@ -98,8 +99,6 @@ sleep 5
 echo "* Dumping remote database"
 ssh ${PRODUCTION_SERVER} "mysqldump -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} --single-transaction ${DATABASE_NAME} " > dump.sql
 
-# setting up local copy of database
-mysql -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} ${DATABASE_NAME} < dump.sql
 
 # for exact match - use single quotes for the parameters
 
@@ -120,8 +119,13 @@ if [ ${TARGET_DB_PASSWORD} ] ; then
     sed -i  -e s/\'${STAGING_DB_PWD}\'/\'${TARGET_DB_PASSWORD}\'/ ${WPCONFIG}    
     STAGING_DB_PWD=${TARGET_DB_PASSWORD}
     echo "STAGING_DB_PWD is now ${STAGING_DB_PWD}"
-
 fi
+
+ mysql -u ${STAGING_DB_USER} -p${STAGING_DB_PWD} ${DATABASE_NAME} < dump.sql
+
+
+
+# setting up local copy of database
 
 
 
@@ -193,6 +197,10 @@ EOF
 
 fi
 
+    echo "Truncating domain mapping table"
+mysql  --user=${STAGING_DB_USER} --password=${STAGING_DB_PWD} ${DATABASE_NAME} << EOF
+TRUNCATE TABLE ${TBL_PREFIX}domain_mapping
+EOF
 
 
 # remove temporary file 
