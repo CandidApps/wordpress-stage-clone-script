@@ -61,6 +61,7 @@ fi
 
 /usr/bin/rsync -e ssh --delete -avz --stats --progress ${PRODUCTION_SERVER}:${PRODUCTION_DIR} ${STAGING_ADDR}/
 
+chmod -R a+rw ${STAGING_ADDR}/wp-content
 
 # parse wp-config to the the constants needed 
 echo "* Fetching data from ${STAGING_ADDR}/wp-config.php"
